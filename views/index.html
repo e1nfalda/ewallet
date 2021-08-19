@@ -47,13 +47,14 @@
           </table>
           <span >
           </span>
-        <!-- transaction list -->
         <div >
         </div>
       </div>
     </div>
+    </div>
   </body>
-  <script>
+
+  <script type="text/javascript">
     var app = new Vue({
       el: "#app",
       data: {
@@ -129,6 +130,22 @@
             });
         },
 
+        updateUserInfo: function() {
+          const params = new URLSearchParams();
+          params.append('phone', this.phone);
+          // Check receiver exists
+          axios
+            .post("/user/get_account_intro", params)
+            .then((response) => {
+              if (response.data.status != 0) {
+                alert(`user ${this.transTo} not found!`)
+              } else {
+                this.userInfo = response.data.body
+              }
+            });
+
+        },
+
         confirmOrder: function() {
           const params = new URLSearchParams();
           params.append('orderId', this.orderId);
@@ -142,7 +159,7 @@
                 alert("confirm order failled")
               } else {
                 this.orderId = ""
-                this.appKey += 1
+                this.updateUserInfo()
                 alert("transfer success")
               }
             })

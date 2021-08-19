@@ -69,7 +69,7 @@ func (p *sessionManager) sessionGC() {
 	ticker := time.NewTicker(300 * time.Second)
 	go func() {
 		for range ticker.C {
-			for sid, _ := range p.Sessions {
+			for sid := range p.Sessions {
 				if sessionExpired(sid) {
 					delete(p.Sessions, sid)
 				}

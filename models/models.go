@@ -9,12 +9,15 @@ package models
 import (
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/astaxie/beego/logs"
 	"github.com/beego/beego/v2/client/orm"
 	_ "github.com/go-sql-driver/mysql"
 )
+
+var DB_HOST = os.Getenv("EWALLET_DBHOST")
 
 const DATABASE = "ewallet"
 const DB_USER = "root"
@@ -26,10 +29,10 @@ type User struct {
 	Id          int
 	PhoneNo     string    `orm:"size(20);unique"`
 	Name        string    `orm:"size(20)"`
-	Password    string    `orm:"size(256)"`
+	Password    string    `orm:"size(64)"`
 	Salt        string    `orm:"size(10)"`
 	Balance     float64   `orm:"digits(12);decimals(2)"`
-	TransterPin string    `orm:"size(10)"`
+	TransterPin string    `orm:"size(64)"`
 	CreateDate  time.Time `orm:"auto_now_add;type(datetime)"`
 	UpdateDate  time.Time `orm:"auto_now;type(datetime)"`
 }
@@ -208,7 +211,7 @@ func init() {
 	orm.Debug = true
 	orm.RegisterDriver("mysql", orm.DRMySQL)
 
-	orm.RegisterDataBase("default", "mysql", fmt.Sprintf("%s:%s@/%s?charset=utf8", DB_USER, DB_PASSWORD, DATABASE))
+	orm.RegisterDataBase("default", "mysql", fmt.Sprintf("%s:%s@%s/%s?charset=utf8", DB_USER, DB_PASSWORD, DB_HOST, DATABASE))
 
 	// 需要在init中注册定义的model
 	orm.RegisterModel(new(User), new(Transaction))
