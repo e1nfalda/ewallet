@@ -4,13 +4,15 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script></head>
   <body>
-    <div id="app">
+    <div id="app" :key="appKey">
       <!-- user info div -->
       <div v-if="isLoginShow">
         <span>phone: <input v-model.trim="phone" placeholder="phone Number" /></span></br>
         <span>password: <input type="password" v-model.trim="password" placeholder="password" /></span>
         <button @click="login()">login</button>
       </div>
+      </br>
+      </br>
       <!-- transfer div -->
       <div v-if="isUserInfoShow">
         hi <i>{{ userInfo.Name }}({{ userInfo.PhoneNo }})</i>, Your Balance is <b>{{ userInfo.Balance }}.</b></br>
@@ -19,12 +21,34 @@
           Amount: <input type="number" v-model.number="transAmount" placeholder="count">
           <button @click="createOrder()">create order </button> </br>
         </span>
-
+        </br>
+        </br>
         <div id="confirmShow" v-if="orderId">
           Pin: <input type="password" v-model="confirmPin" placeholder="input your transter pin code"/> <button @click="confirmOrder()">confirm </button> </br>
         </div>
+        </br>
+        </br>
+        <div>
+          <table>
+            <tr>
+              <th>order_no</th>
+              <th>From</th>
+              <th>To</th>
+              <th>amount</th>
+              <th>amount</th>
+            </tr>
+            <tr v-for="t in transactions">
+              <td>{{t.OrderID}}</td>
+              <td>{{t.FromUser}}</td>
+              <td>{{t.ToUser}}</td>
+              <td>{{t.Amount}}</td>
+              <td>{{t.UpdateDate}}</td>
+            </tr>
+          </table>
+          <span >
+          </span>
+        <!-- transaction list -->
         <div >
-          <!-- transaction list -->
         </div>
       </div>
     </div>
@@ -33,6 +57,7 @@
     var app = new Vue({
       el: "#app",
       data: {
+        appKey: 1,
         phone: "",
         password: "",
         userInfo: {},
@@ -40,6 +65,7 @@
 
         isUserInfoShow:  false,
         TransToTextColor: "black",
+        transactions: null,
         // transfer
         transTo: "",
         transAmount: "",
@@ -61,6 +87,7 @@
                 Object.assign(this.userInfo, response.data.body)
                 this.isLoginShow = false
                 this.isUserInfoShow = true
+                this.getLastTransactions()
               } else {
                 alert("login error!")
               }
@@ -83,6 +110,10 @@
         },
 
         createOrder: function() {
+          if (this.toUser == this.phone) {
+            alert("can not transfer to self")
+            return
+          }
           const params = new URLSearchParams();
           params.append('toUser', this.transTo);
           params.append('amount', this.transAmount);
@@ -111,9 +142,22 @@
                 alert("confirm order failled")
               } else {
                 this.orderId = ""
+                this.appKey += 1
                 alert("transfer success")
               }
-            });
+            })
+        },
+
+        getLastTransactions: function() {
+          axios
+            .get("/transaction/list")
+            .then((response) => {
+              if (response.data.status != 0) {
+                alert("get transaction history failed")
+              } else {
+                this.transactions = response.data.body.transactions
+              }
+            })
         }
 
       }

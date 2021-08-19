@@ -124,12 +124,12 @@ func GetTransactionList(phone string) []Transaction {
 	var trans = make([]Transaction, 0, 10)
 
 	o := orm.NewOrm()
-	qs := o.QueryTable("transcation")
 	cond := orm.NewCondition()
 
+	qs := o.QueryTable("transaction")
 	cond1 := cond.And("from_user", phone).Or("to_user", phone)
+	cond1 = cond.And("status", 1)
 	qs = qs.SetCond(cond1)
-
 	qs.OrderBy("-id").Limit(10).All(&trans)
 
 	return trans
