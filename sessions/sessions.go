@@ -10,6 +10,7 @@ package sessions
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"time"
 )
@@ -18,7 +19,7 @@ const MAX_LIFETIME_SECONDS = 60 * 60 * time.Second
 
 type userSession struct {
 	SessionID string
-	phone     string
+	Phone     string
 	LastTime  time.Time // Last update time. any access may change this value
 	// infos like login ip, login time things here
 }
@@ -49,10 +50,10 @@ func GetInfo(sessionID string, attr string, byUser ...interface{}) (interface{},
 
 // CreateSession create session for user, and register to global session manager
 func CreateSession(phone string) string {
-	sessionID := phone // TODO random a unique string for ession avoid confic is better
+	sessionID := genSessionID(phone)
 	session := userSession{
 		SessionID: sessionID,
-		phone:     phone,
+		Phone:     phone,
 		LastTime:  time.Now(),
 	}
 	globalSession.Sessions[sessionID] = &session
@@ -96,4 +97,11 @@ func sessionExpired(sessionID string) bool {
 		return true
 	}
 	return false
+}
+
+// genSessionID simple random algorithm
+func genSessionID(phone string) string {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	return fmt.Sprintf("%s-%d", phone, r1.Int31n(10000))
 }

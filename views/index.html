@@ -1,0 +1,123 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script></head>
+  <body>
+    <div id="app">
+      <!-- user info div -->
+      <div v-if="isLoginShow">
+        <span>phone: <input v-model.trim="phone" placeholder="phone Number" /></span></br>
+        <span>password: <input type="password" v-model.trim="password" placeholder="password" /></span>
+        <button @click="login()">login</button>
+      </div>
+      <!-- transfer div -->
+      <div v-if="isUserInfoShow">
+        hi <i>{{ userInfo.Name }}({{ userInfo.PhoneNo }})</i>, Your Balance is <b>{{ userInfo.Balance }}.</b></br>
+        <span>Transfer To:
+          <input v-model.trim="transTo" @change="checkUserExists" v-bind:style="'color:'+TransToTextColor" placeholder="receiver phone no."/> 
+          Amount: <input type="number" v-model.number="transAmount" placeholder="count">
+          <button @click="createOrder()">create order </button> </br>
+        </span>
+
+        <div id="confirmShow" v-if="orderId">
+          Pin: <input type="password" v-model="confirmPin" placeholder="input your transter pin code"/> <button @click="confirmOrder()">confirm </button> </br>
+        </div>
+        <div >
+          <!-- transaction list -->
+        </div>
+      </div>
+    </div>
+  </body>
+  <script>
+    var app = new Vue({
+      el: "#app",
+      data: {
+        phone: "",
+        password: "",
+        userInfo: {},
+        isLoginShow: true,
+
+        isUserInfoShow:  false,
+        TransToTextColor: "black",
+        // transfer
+        transTo: "",
+        transAmount: "",
+        orderId: "",
+        confirmPin: ""
+      },
+
+      methods: {
+        // login
+        login: function() {
+          let encrypted = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Hex)
+          const params = new URLSearchParams();
+          params.append('phone', this.phone);
+          params.append('password', encrypted);
+          axios
+            .post("/user/login", params)
+            .then((response) => {
+              if (response.data.status == 0) {
+                Object.assign(this.userInfo, response.data.body)
+                this.isLoginShow = false
+                this.isUserInfoShow = true
+              } else {
+                alert("login error!")
+              }
+            });
+        },
+        checkUserExists: function() {
+          const params = new URLSearchParams();
+          params.append('phone', this.transTo);
+          // Check receiver exists
+          axios
+            .post("/user/get_account_intro", params)
+            .then((response) => {
+              if (response.data.status != 0) {
+                alert(`user ${this.transTo} not found!`)
+                this.TransToTextColor = "red"
+              } else {
+                this.TransToTextColor = "black"
+              }
+            });
+        },
+
+        createOrder: function() {
+          const params = new URLSearchParams();
+          params.append('toUser', this.transTo);
+          params.append('amount', this.transAmount);
+          // Check receiver exists
+          axios
+            .post("/transaction/create_order", params)
+            .then((response) => {
+              if (response.data.status != 0) {
+                alert(`create order failed`)
+              } else {
+                this.orderId = response.data.body.order_no
+              }
+            });
+        },
+
+        confirmOrder: function() {
+          const params = new URLSearchParams();
+          params.append('orderId', this.orderId);
+          params.append('pin', CryptoJS.SHA256(this.confirmPin).toString(CryptoJS.enc.Hex))
+          // Check receiver exists
+          axios
+            .post("/transaction/confirm_order", params)
+            .then((response) => {
+              this.confirmPin = ""
+              if (response.data.status != 0) {
+                alert("confirm order failled")
+              } else {
+                this.orderId = ""
+                alert("transfer success")
+              }
+            });
+        }
+
+      }
+    });
+
+  </script>
+</html>
