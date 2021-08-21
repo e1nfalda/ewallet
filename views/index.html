@@ -158,9 +158,10 @@
               if (response.data.status != 0) {
                 alert("confirm order failled")
               } else {
+                alert("transfer success")
                 this.orderId = ""
                 this.updateUserInfo()
-                alert("transfer success")
+                this.getLastTransactions()
               }
             })
         },
