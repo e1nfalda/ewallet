@@ -2,31 +2,32 @@ package services
 
 import (
 	"crypto/sha256"
+	"ewallet/defines"
 	"ewallet/models"
 	"ewallet/sessions"
 	"fmt"
 )
 
-// GetUserPublicInfo
-func GetUserPublicInfo(phone string) (userInfo *models.User, errCode int) {
+// GetUserInfo  get user's information。
+func GetUserInfo(phone string) (userInfo *models.User, err error) {
 	userInfo = models.GetUserInfo(phone)
 	if userInfo == nil {
-		errCode = ERROR_CODE_USER_1
+		err = defines.ERROR_CODE_USER_1
 		return
 	}
 	return
 }
 
 // Login check user phone and password.If success return sessionID
-func Login(phone, password string) (sessionID string, userInfo *models.User, errCode int) {
+func Login(phone, password string) (sessionID string, userInfo *models.User, err error) {
 	userInfo = models.GetUserInfo(phone)
 	if userInfo == nil {
-		errCode = ERROR_CODE_USER_1
+		err = defines.ERROR_CODE_USER_1
 		return
 	}
 	if !checkPassword(userInfo, password) {
 		userInfo = nil
-		errCode = ERROR_CODE_USER_2
+		err = defines.ERROR_CODE_USER_2
 		return
 	}
 	sessionID = sessions.CreateSession(phone)

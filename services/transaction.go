@@ -1,13 +1,9 @@
 package services
 
 import (
+	"ewallet/defines"
 	"ewallet/models"
-
-	"github.com/beego/beego/v2/core/logs"
 )
-
-const ORDER_STATUS_CREATED = 0
-const ORDER_STATUS_FINISHED = 1
 
 /*
  * two step transcation.
@@ -20,39 +16,36 @@ func GetTransactionList(userPhone string) []models.Transaction {
 }
 
 // CreateOrder create a new order for transaction.
-func CreateOrder(sender, receiver string, amount float64) (orderId string, errCode int) {
-	senderInfo := models.GetUserInfo(sender)
-	if senderInfo.Balance < amount {
-		errCode = ERROR_CODE_TRANS_1
+func CreateOrder(sender, receiver string, amount float64) (orderId string, err error) {
+	if amount < 0 {
+		err = defines.ERROR_CODE_TRANS_1
 		return
 	}
-	orderID, err := models.CreateOrder(sender, receiver, amount)
-	if err != nil {
-		logs.Error("Error Create Order", sender, receiver, amount, err)
-		return "", ERROR_CODE_TRANS_2
+	if sender == receiver {
+		err = defines.ERROR_CODE_TRANS_9
+		return
 	}
-
-	return orderID, ERROR_CODE_SUCCESS
+	senderInfo := models.GetUserInfo(sender)
+	if senderInfo.Balance < amount {
+		err = defines.ERROR_CODE_TRANS_1
+		return
+	}
+	if sender == receiver {
+		err = defines.ERROR_CODE_TRANS_1
+		return
+	}
+	return models.CreateOrder(sender, receiver, amount)
 }
 
-func ConfirmOrder(orderID, confirmPin string) int {
+func ConfirmOrder(orderID, confirmPin string) error {
 	orderInfo := models.GetOrder(orderID)
 	if orderInfo == nil {
-		return ERROR_CODE_TRANS_3
+		return defines.ERROR_CODE_TRANS_3
 	}
-
-	if orderInfo.Status != ORDER_STATUS_CREATED {
-		return ERROR_CODE_TRANS_6
-	}
-
 	userInfo := models.GetUserInfo(orderInfo.FromUser)
 	if !userInfo.CheckConfirmPin(confirmPin) {
-		return ERROR_CODE_TRANS_4
+		return defines.ERROR_CODE_TRANS_4
 	}
 
-	if !models.ProcessOrder(orderID) {
-		return ERROR_CODE_TRANS_5
-	}
-
-	return ERROR_CODE_SUCCESS
+	return models.ProcessOrder(orderID)
 }

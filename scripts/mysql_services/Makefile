@@ -19,16 +19,16 @@ CLEAN:
 
 
 CREATE_DATABASE:
-	${DOCKER} exec ${CONTAINER_NAME} mysql -h 127.0.0.1 -P 3306 -u root -p${DB_PASSWORD} -e 'CREATE DATABASE ${DATABASE_NAME}'
+	${DOCKER} exec ${CONTAINER_NAME} mysql -h host.docker.internal -P 3306 -u root -p${DB_PASSWORD} -e 'CREATE DATABASE ${DATABASE_NAME}'
 
 CREATE_TABLE:
 	${DOCKER} run --network=host --rm ${GO_IMAGE} go run scripts/mysql_services/create_tables.go
 
 SOURCE_DATA:
-	${DOCKER} exec ${CONTAINER_NAME} mysql -h 127.0.0.1 -P 3306 -D ewallet -u root -p${DB_PASSWORD} -e "${TESTSQL}"
+	${DOCKER} exec ${CONTAINER_NAME} mysql -h host.docker.internal -P 3306 -D ewallet -u root -p${DB_PASSWORD} -e "${TESTSQL}"
 
 RUN_DB:
-	${DOCKER} run --rm --name ${CONTAINER_NAME} -p 127.0.0.1:3306:3306 -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} -d -v /tmp/mysql:/var/lib/mysql ${IMAGE} 
+	${DOCKER} run --rm --name ${CONTAINER_NAME} -p host.docker.internal:3306:3306 -e MYSQL_ROOT_PASSWORD=${DB_PASSWORD} -d -v /tmp/mysql:/var/lib/mysql ${IMAGE} 
 
 DEPLOY:
 	${DOCKER} pull ${IMAGE}

@@ -6,18 +6,16 @@
   <body>
     <div id="app" :key="appKey">
       <!-- user info div -->
-      <div v-if="isLoginShow">
+      <div v-if="!Boolean(userInfo.PhoneNo)">
         <span>phone: <input v-model.trim="phone" placeholder="phone Number" /></span></br>
         <span>password: <input type="password" v-model.trim="password" placeholder="password" /></span>
         <button @click="login()">login</button>
       </div>
-      </br>
-      </br>
       <!-- transfer div -->
-      <div v-if="isUserInfoShow">
+      <div v-else >
         hi <i>{{ userInfo.Name }}({{ userInfo.PhoneNo }})</i>, Your Balance is <b>{{ userInfo.Balance }}.</b></br>
         <span>Transfer To:
-          <input v-model.trim="transTo" @change="checkUserExists" v-bind:style="'color:'+TransToTextColor" placeholder="receiver phone no."/> 
+          <input v-model.trim="transTo" @change="checkReceiver" v-bind:style="'color:'+TransToTextColor" placeholder="receiver phone no."/> 
           Amount: <input type="number" v-model.number="transAmount" placeholder="count">
           <button @click="createOrder()">create order </button> </br>
         </span>
@@ -55,6 +53,7 @@
   </body>
 
   <script type="text/javascript">
+
     var app = new Vue({
       el: "#app",
       data: {
@@ -62,9 +61,7 @@
         phone: "",
         password: "",
         userInfo: {},
-        isLoginShow: true,
 
-        isUserInfoShow:  false,
         TransToTextColor: "black",
         transactions: null,
         // transfer
@@ -74,108 +71,103 @@
         confirmPin: ""
       },
 
+      computed: {
+        isLoginShow: {
+          get() {
+            return !Boolean(this.userInfo.phone)
+          }
+        }
+      },
+
+      mounted() {
+        this.validateLogin()
+      },
+
       methods: {
+        request: function(method, url, params, handler, quiet=false) {
+          let req
+          if (method === "get") {
+            req = axios.get(url)
+          } else {
+            let urlParams = new URLSearchParams();
+            for (let k in params) {
+              urlParams.append(k, params[k]);
+            }
+            req = axios.post(url, urlParams)
+          }
+
+          req.then((response) => {
+            if (response.data.status == 0) {
+              handler(response.data)
+            } else {
+              if (!quiet) {
+                alert("error: " + response.data.msg)
+              }
+            }
+          });
+
+        },
+        // check cookies
+        validateLogin: function() {
+          this.request("post", "/user/get_self_info", {}, (data) => {
+            alert("you'v login in!")
+            this.userInfo = data.body
+            this.getLastTransactions()
+          }, true)
+        },
         // login
         login: function() {
-          let encrypted = CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Hex)
-          const params = new URLSearchParams();
-          params.append('phone', this.phone);
-          params.append('password', encrypted);
-          axios
-            .post("/user/login", params)
-            .then((response) => {
-              if (response.data.status == 0) {
-                Object.assign(this.userInfo, response.data.body)
-                this.isLoginShow = false
-                this.isUserInfoShow = true
-                this.getLastTransactions()
-              } else {
-                alert("login error!")
-              }
-            });
+          let params = {
+            "phone": this.phone,
+            "password": CryptoJS.SHA256(this.password).toString(CryptoJS.enc.Hex)
+          }
+          this.request("post", "/user/login", params, (data) => {
+            this.userInfo = data.body
+            this.getLastTransactions()
+          },
+          )
         },
-        checkUserExists: function() {
-          const params = new URLSearchParams();
-          params.append('phone', this.transTo);
-          // Check receiver exists
-          axios
-            .post("/user/get_account_intro", params)
-            .then((response) => {
-              if (response.data.status != 0) {
-                alert(`user ${this.transTo} not found!`)
-                this.TransToTextColor = "red"
-              } else {
-                this.TransToTextColor = "black"
-              }
-            });
+        checkReceiver: function() {
+          let params = {"phone": this.transTo}
+          this.TransToTextColor = "red"
+          this.request("post", "/user/get_account_info", params, (data) => {
+            this.TransToTextColor = "black"
+          })
         },
 
         createOrder: function() {
-          if (this.toUser == this.phone) {
-            alert("can not transfer to self")
-            return
+          let params = {
+            "toUser": this.transTo,
+            "amount": this.transAmount,
           }
-          const params = new URLSearchParams();
-          params.append('toUser', this.transTo);
-          params.append('amount', this.transAmount);
-          // Check receiver exists
-          axios
-            .post("/transaction/create_order", params)
-            .then((response) => {
-              if (response.data.status != 0) {
-                alert(`create order failed`)
-              } else {
-                this.orderId = response.data.body.order_no
-              }
-            });
+          this.request("post", "/transaction/create_order", params, (data) => {
+            this.orderId = data.body.order_no
+          })
         },
 
         updateUserInfo: function() {
-          const params = new URLSearchParams();
-          params.append('phone', this.phone);
-          // Check receiver exists
-          axios
-            .post("/user/get_account_intro", params)
-            .then((response) => {
-              if (response.data.status != 0) {
-                alert(`user ${this.transTo} not found!`)
-              } else {
-                this.userInfo = response.data.body
-              }
-            });
-
+          this.request("post", "/user/get_self_info", {}, (data) => {
+            this.userInfo = data.body
+          })
         },
 
         confirmOrder: function() {
-          const params = new URLSearchParams();
-          params.append('orderId', this.orderId);
-          params.append('pin', CryptoJS.SHA256(this.confirmPin).toString(CryptoJS.enc.Hex))
-          // Check receiver exists
-          axios
-            .post("/transaction/confirm_order", params)
-            .then((response) => {
-              this.confirmPin = ""
-              if (response.data.status != 0) {
-                alert("confirm order failled")
-              } else {
-                alert("transfer success")
-                this.orderId = ""
-                this.updateUserInfo()
-                this.getLastTransactions()
-              }
-            })
+          let params = {
+            "orderId": this.orderId,
+            "pin": CryptoJS.SHA256(this.confirmPin).toString(CryptoJS.enc.Hex)
+          }
+          this.request("post", "/transaction/confirm_order", params, (data) => {
+            alert("transfer success")
+            this.orderId = ""
+            this.updateUserInfo()
+            this.getLastTransactions()
+          })
         },
 
         getLastTransactions: function() {
-          axios
-            .get("/transaction/list")
-            .then((response) => {
-              if (response.data.status != 0) {
-                alert("get transaction history failed")
-              } else {
-                this.transactions = response.data.body.transactions
-              }
-            })
+          this.request("get", "/transaction/list", null, (data) => {
+                this.transactions = data.body.transactions
+          })
         }
 
       }

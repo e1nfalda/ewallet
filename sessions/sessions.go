@@ -8,7 +8,7 @@ package sessions
  */
 
 import (
-	"errors"
+	"ewallet/defines"
 	"fmt"
 	"math/rand"
 	"reflect"
@@ -32,16 +32,16 @@ type sessionManager struct {
 var globalSession *sessionManager
 
 // GetInfo get Session Info by attr. If not exists, return nil
-func GetInfo(sessionID string, attr string, byUser ...interface{}) (interface{}, error) {
+func GetInfo(sessionID string, attr string, updateTime ...interface{}) (interface{}, error) {
 	if sessionExpired(sessionID) {
-		return nil, errors.New("session Expired")
+		return nil, defines.ERROR_CODE_USER_5
 	}
 
 	r := reflect.ValueOf(globalSession.Sessions[sessionID])
 	v := reflect.Indirect(r).FieldByName(attr).Interface()
 
 	// flag hints access by user action
-	if len(byUser) == 1 {
+	if len(updateTime) > 1 {
 		updateSessionTime(sessionID)
 	}
 
@@ -81,6 +81,7 @@ func (p *sessionManager) sessionGC() {
 
 func init() {
 	globalSession = &sessionManager{"globalSession", map[string]*userSession{}}
+	globalSession.sessionGC()
 }
 
 // sessionExpired check session whether expired, return bool

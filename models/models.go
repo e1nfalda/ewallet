@@ -7,13 +7,15 @@ package models
 */
 
 import (
+	"errors"
+	"ewallet/defines"
 	"fmt"
 	"math/rand"
 	"os"
 	"time"
 
-	"github.com/astaxie/beego/logs"
 	"github.com/beego/beego/v2/client/orm"
+	"github.com/beego/beego/v2/core/logs"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -127,12 +129,13 @@ func GetTransactionList(phone string) []Transaction {
 	var trans = make([]Transaction, 0, 10)
 
 	o := orm.NewOrm()
-	cond := orm.NewCondition()
 
 	qs := o.QueryTable("transaction")
-	cond1 := cond.And("from_user", phone).Or("to_user", phone)
-	cond1 = cond.And("status", 1)
-	qs = qs.SetCond(cond1)
+	qs = qs.Filter("status", 1)
+	cond := qs.GetCond()
+	cond = cond.And("from_user", phone).Or("to_user", phone)
+	cond = cond.And("status", 1)
+	qs = qs.SetCond(cond)
 	qs.OrderBy("-id").Limit(10).All(&trans)
 
 	return trans
@@ -153,40 +156,60 @@ func GetUserInfo(phone string) *User {
 }
 
 // ProcessOrder Finish a order in database's transcation
-func ProcessOrder(orderID string) bool {
+func ProcessOrder(orderID string) error {
 	o := orm.NewOrm()
 	orderInfo := Transaction{OrderID: orderID}
+
+	// start database transcation
 	to, err := o.Begin()
 	if err != nil {
 		logs.Error("Error process order:", err)
-		return false
+		return errors.New(fmt.Sprintf("error start transcation %s", err))
 	}
 
-	err = to.Read(&orderInfo, "orderID")
+	err = to.ReadForUpdate(&orderInfo, "orderID")
 	if err != nil {
 		logs.Error("Error process order:", err)
-		return false
+		return errors.New(fmt.Sprintf("error read order info %s", err))
+	}
+	if orderInfo.Status != defines.ORDER_STATUS_CREATED {
+		to.Rollback()
+		return defines.ERROR_CODE_TRANS_7
+	}
+
+	sender := User{PhoneNo: orderInfo.FromUser}
+	err = to.ReadForUpdate(&sender, "PhoneNo")
+	if err != nil {
+		logs.Error("Error Get sender:", err)
+		return errors.New(fmt.Sprintf("error read sender info %s", err))
+	}
+	if sender.Balance < orderInfo.Amount {
+		to.Rollback()
+		return defines.ERROR_CODE_TRANS_8
 	}
 
 	_, err = to.Raw("UPDATE auth_user SET balance=balance-? where phone_no=?", orderInfo.Amount, orderInfo.FromUser).Exec()
 	if err != nil {
 		logs.Error("Error process order:", err)
-		return false
+		err = to.Rollback()
+		return errors.New(fmt.Sprintf("error deduct sender balance %s", err))
 	}
 	_, err = to.Raw("UPDATE auth_user SET balance=balance+? where phone_no=?", orderInfo.Amount, orderInfo.ToUser).Exec()
 	if err != nil {
-		logs.Error("Error process order:", err)
-		return false
-	}
-	orderInfo.Status = 1 // TODO use const
-	to.Update(&orderInfo)
-	err = to.Commit()
-	if err != nil {
-		logs.Error("Error process order:", err)
-		return false
+		logs.Error("Error erorder:", err)
+		to.Rollback()
+		return errors.New(fmt.Sprintf("error add receiver balance %s", err))
 	}
 
-	return true
+	orderInfo.Status = defines.ORDER_STATUS_FINISHED
+	to.Update(&orderInfo)
+
+	err = to.Commit()
+	if err != nil {
+		return errors.New(fmt.Sprintf("error commit order info %s", err))
+	}
+
+	return nil
 }
 
 // CreateTables create tables when deploy
