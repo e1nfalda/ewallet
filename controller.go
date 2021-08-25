@@ -17,6 +17,7 @@ type MainController struct {
 	SessionID string
 }
 
+/***************overwrite beego controller ******/
 func (p *MainController) Return(err error, data interface{}) {
 	var code int
 	var message string
@@ -163,6 +164,7 @@ func (p *MainController) GetTransactionList() {
 	p.Return(err, map[string]interface{}{"transactions": transactions})
 }
 
+/*******************************routers**********************/
 func main() {
 	// web.SetStaticPath("/static", "public")
 	web.Router("/", &MainController{}, "get:MainPage")

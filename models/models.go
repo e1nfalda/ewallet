@@ -7,6 +7,7 @@ package models
 */
 
 import (
+	"database/sql"
 	"errors"
 	"ewallet/defines"
 	"fmt"
@@ -161,7 +162,8 @@ func ProcessOrder(orderID string) error {
 	orderInfo := Transaction{OrderID: orderID}
 
 	// start database transcation
-	to, err := o.Begin()
+	to, err := o.BeginWithOpts(&sql.TxOptions{Isolation: sql.LevelSerializable})
+
 	if err != nil {
 		logs.Error("Error process order:", err)
 		return errors.New(fmt.Sprintf("error start transcation %s", err))
@@ -188,6 +190,7 @@ func ProcessOrder(orderID string) error {
 		return defines.ERROR_CODE_TRANS_8
 	}
 
+	// time.Sleep(30 * time.Second) // to test concurrence
 	_, err = to.Raw("UPDATE auth_user SET balance=balance-? where phone_no=?", orderInfo.Amount, orderInfo.FromUser).Exec()
 	if err != nil {
 		logs.Error("Error process order:", err)
