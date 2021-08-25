@@ -163,8 +163,8 @@ About monitors it's very import .Should have nginx and framework‘s access log,
 
    ```json
    {
-      status: 0, // success. error defines: ref error code  
-     transcation_no: "jijijoaijixea" // encoded transcation id.
+     "status": 0, // success. error defines: ref error code  
+     "transcation_no": "jijijoaijixea" // encoded transcation id.
    }
 
 6. `/transcation/confim`
@@ -178,8 +178,8 @@ About monitors it's very import .Should have nginx and framework‘s access log,
 
      ```json
    {
-     status: 0, // success. error defines: ref error code  
-     transcation_no: "jijijoaijixea" // encoded transcation id.
+     "status": 0, // success. error defines: ref error code 
+     "transcation_no": "jijijoaijixea" // encoded transcation id.
    }
      ```
 
@@ -192,8 +192,8 @@ About monitors it's very import .Should have nginx and framework‘s access log,
 
      ```json
    {
-     status: 0, // success. error defines: ref error code  
-     transcation_no: "jijijoaijixea" // encoded transcation id.
+     "status": 0, //success. error defines: ref error code
+     "transcation_no": "jijijoaijixea" // "encoded transcation id."
    }
      ```
 
