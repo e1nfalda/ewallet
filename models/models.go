@@ -187,7 +187,7 @@ func ProcessOrder(orderID string) error {
 	}
 	if sender.Balance < orderInfo.Amount {
 		to.Rollback()
-		return defines.ERROR_CODE_TRANS_8
+		return defines.ERROR_CODE_TRANS_1
 	}
 
 	// time.Sleep(30 * time.Second) // to test concurrence

@@ -50,15 +50,16 @@ var (
 	ERROR_CODE_USER_4 = newEwalletError(1004, "need login")
 	ERROR_CODE_USER_5 = newEwalletError(1004, "need relogin")
 
-	ERROR_CODE_TRANS_1 = newEwalletError(2001, "error balance not enough")
-	ERROR_CODE_TRANS_2 = newEwalletError(2002, "error create order")
-	ERROR_CODE_TRANS_3 = newEwalletError(2003, "error get order info")
-	ERROR_CODE_TRANS_4 = newEwalletError(2004, "error check confirm pin code error")
+	ERROR_CODE_TRANS_1 = newEwalletError(2001, "balance not enough")
+	ERROR_CODE_TRANS_2 = newEwalletError(2002, "can't create order")
+	ERROR_CODE_TRANS_3 = newEwalletError(2003, "can't get order info")
+	ERROR_CODE_TRANS_4 = newEwalletError(2004, "pin code incorrect")
 	ERROR_CODE_TRANS_5 = newEwalletError(2005, "transfer error")
 	ERROR_CODE_TRANS_6 = newEwalletError(2006, "error order finished")
-	ERROR_CODE_TRANS_7 = newEwalletError(2006, "error order status")
-	ERROR_CODE_TRANS_8 = newEwalletError(2006, "sender balance not enough")
-	ERROR_CODE_TRANS_9 = newEwalletError(2006, "can not transfer money to yourself")
+	ERROR_CODE_TRANS_7 = newEwalletError(2007, "error order status")
+	// ERROR_CODE_TRANS_8  = newEwalletError(2008, "sender balance not enough")
+	ERROR_CODE_TRANS_9  = newEwalletError(2009, "can not transfer money to yourself")
+	ERROR_CODE_TRANS_10 = newEwalletError(20010, "amount cann't be negative")
 )
 
 func (p *Result) Json() string {

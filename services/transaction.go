@@ -18,7 +18,7 @@ func GetTransactionList(userPhone string) []models.Transaction {
 // CreateOrder create a new order for transaction.
 func CreateOrder(sender, receiver string, amount float64) (orderId string, err error) {
 	if amount < 0 {
-		err = defines.ERROR_CODE_TRANS_1
+		err = defines.ERROR_CODE_TRANS_10
 		return
 	}
 	if sender == receiver {
@@ -27,10 +27,6 @@ func CreateOrder(sender, receiver string, amount float64) (orderId string, err e
 	}
 	senderInfo := models.GetUserInfo(sender)
 	if senderInfo.Balance < amount {
-		err = defines.ERROR_CODE_TRANS_1
-		return
-	}
-	if sender == receiver {
 		err = defines.ERROR_CODE_TRANS_1
 		return
 	}
